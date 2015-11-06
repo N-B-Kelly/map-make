@@ -1,0 +1,5 @@
+C:\Users\USER\Desktop\map_explore\map_explore\bin\Debug\map_explore.exe
+C:\Users\USER\Desktop\map_explore\map_explore\bin\Debug\map_explore.pdb
+C:\Users\USER\Desktop\map_explore\map_explore\obj\x86\Debug\map_explore.exe
+C:\Users\USER\Desktop\map_explore\map_explore\obj\x86\Debug\map_explore.pdb
+C:\Users\USER\Desktop\map_explore\map_explore\obj\x86\Debug\map_explore.csprojResolveAssemblyReference.cache

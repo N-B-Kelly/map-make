@@ -1,0 +1,4 @@
+C:\Users\USER\Desktop\map_explore\map_explore\bin\Release\map_explore.exe
+C:\Users\USER\Desktop\map_explore\map_explore\bin\Release\map_explore.pdb
+C:\Users\USER\Desktop\map_explore\map_explore\obj\x86\Release\map_explore.exe
+C:\Users\USER\Desktop\map_explore\map_explore\obj\x86\Release\map_explore.pdb
