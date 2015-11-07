@@ -1,6 +1,6 @@
 ﻿namespace Display_Map
 {
-    partial class Form1
+    partial class Map_Man
     {
         /// <summary>
         /// Required designer variable.
@@ -33,23 +33,25 @@
             // 
             this.pictureBox1.Location = new System.Drawing.Point(0, 0);
             this.pictureBox1.Name = "pictureBox1";
-            this.pictureBox1.Size = new System.Drawing.Size(900, 900);
+            this.pictureBox1.Size = new System.Drawing.Size(900, 500);
             this.pictureBox1.TabIndex = 0;
             this.pictureBox1.TabStop = false;
             this.pictureBox1.MouseDown += new System.Windows.Forms.MouseEventHandler(this.pictureBox1_Click);
             // 
-            // Form1
+            // Map_Man
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(900, 899);
+            this.ClientSize = new System.Drawing.Size(900, 501);
             this.Controls.Add(this.pictureBox1);
             this.DoubleBuffered = true;
-            this.Name = "Form1";
-            this.Text = "Form1";
+            this.Name = "Map_Man";
+            this.Text = "Map Man";
             this.Load += new System.EventHandler(this.Form1_Load);
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
             this.ResumeLayout(false);
+            this.Resize += new System.EventHandler(this.OnResize);
+            this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.OnKeyDown) ;
 
         }
 

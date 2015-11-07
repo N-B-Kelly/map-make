@@ -14,51 +14,34 @@ using System.Threading;
 
 namespace Display_Map
 {
-    public partial class Form1 : Form
+    public partial class Map_Man : Form
     {
         Graphics graph;
         Brush block = new SolidBrush(Color.Purple);
         Brush back = new SolidBrush(Color.LightSalmon);
-        Image im_wall = Image.FromFile(@"Resources/Wall_Seen.png");
-        Image im_floor = Image.FromFile(@"Resources/Blank_Seen.png");
-        int width = 300;
-        int height = 150;
-        int pixel = 6;
-
+        Brush player = new SolidBrush(Color.Olive);
+        Bitmap btc;
+        int px;
+        int py;
+        int width = 45;
+        int height = 45;
+        float pixelWidth = 6;
+        float pixelHeight = 6;
         int ca = 9;
         int cb = 8;
         int cc = 2;
         int cs = 8;
 
+        int[,] map;
         int delay = 15;
 
-        public Form1 () {
+        public Map_Man () {
             InitializeComponent();
         }
-        int[,] map;
-
-        /* 
-        private void pictureBox1_Click (object sender, EventArgs e) {
-            if ((e as System.Windows.Forms.MouseEventArgs).Button == MouseButtons.Right)
-                map = map_explore.Map.Generation.Master.continue_gen(width, height, map);
-            else
-                map = map_explore.Map.Generation.Master.genBase(width, height);
-            pictureBox1.Refresh();
-            graph.FillRectangle(back, new Rectangle(0, 0, width*pixel, height*pixel));
-            for (int i = 0; i < width; i++) {
-                for (int j = 0; j < height; j++) {
-                    Point p = new Point(i * pixel, j * pixel);
-                    if (map[i, j] == 0) {
-                        graph.FillRectangle(block, new Rectangle(p, new Size(pixel, pixel)));
-                    }
-                }
-            }
-        }
-         */
 
         private void pictureBox1_Click (object sender, EventArgs e) {
+            btc = new Bitmap(width * (int)pixelWidth, height * (int)pixelHeight);
             if ((e as System.Windows.Forms.MouseEventArgs).Button == MouseButtons.Right) {
-                Bitmap btc = new Bitmap(width * pixel, height * pixel);
                 for (int i = 0; i <= cs; i++) {
                     map = map_explore.Map.Generation.Master.constrained_stepper(width, height, i, cs, map);
                     Display_Image(btc);
@@ -66,37 +49,96 @@ namespace Display_Map
                 }
             }
             else {
-                Bitmap btc = new Bitmap(width * pixel, height * pixel);
                 for (int i = 0; i < 3 + ca + cb + cc; i++) {
                     map = map_explore.Map.Generation.Master.stepper(width, height, i, 2 + ca, 2 + ca + cb, 2 + ca + cb + cc, map);
                     Display_Image(btc);
                     Thread.Sleep(delay);
                 }
             }
+            Random playerX = new Random();
+
+            do {
+                px = playerX.Next(width);
+                py = playerX.Next(height);
+            }
+            while (map[px, py] != 1);
+
+            Display_Player(btc, player);
         }
 
         private void Display_Image (Bitmap btc) {
             Graphics g = Graphics.FromImage(btc);
-            g.FillRectangle(back, new Rectangle(0, 0, width * pixel, height * pixel));
+            g.FillRectangle(back, 0, 0, width * pixelWidth, height * pixelHeight);
             for (int k = 0; k < width; k++) {
                 for (int j = 0; j < height; j++) {
-                    Point p = new Point(k * pixel, j * pixel);
                     if (map[k, j] == 0) {
-                        g.FillRectangle(block, new Rectangle(p, new Size(pixel, pixel)));
+                        g.FillRectangle(block, k * pixelWidth, j * pixelHeight, pixelWidth, pixelHeight);
                     }
                 }
-
             }
             g.Flush();
 
             pictureBox1.Image = btc;
             pictureBox1.Refresh();
         }
+        private void Display_Player(Bitmap btc, Brush pcol) {
+            Graphics g = Graphics.FromImage(btc);
+            g.FillRectangle(pcol, px * pixelWidth, py * pixelHeight, pixelWidth, pixelHeight);
+            g.Flush();
 
+            pictureBox1.Image = btc;
+            pictureBox1.Refresh();
+        }
+        private void Display_Player(Bitmap btc, Brush pcol, int x, int y) {
+            Graphics g = Graphics.FromImage(btc);
+            g.FillRectangle(pcol, x * pixelWidth, y * pixelHeight, pixelWidth, pixelHeight);
+            g.Flush();
+
+            pictureBox1.Image = btc;
+            pictureBox1.Refresh();
+        }
         private void Form1_Load (object sender, EventArgs e) {
+            pictureBox1.Width = this.Width - 8;
+            pictureBox1.Height = this.Height - 28;
             graph = pictureBox1.CreateGraphics();
             map = new int[width, height];
-            pixel = 900 / width;
+            pixelWidth = pictureBox1.Width / width;
+            pixelHeight = pictureBox1.Height / height;
+            
+        }
+
+        private void OnResize(object sender, EventArgs e) {
+            pictureBox1.Width = this.Width - 8;
+            pictureBox1.Height = this.Height - 28;
+            graph = pictureBox1.CreateGraphics();
+            map = new int[width, height];
+            pixelWidth = (float)pictureBox1.Width / (float)width;
+            pixelHeight = (float)pictureBox1.Height / (float)height;
+        }
+
+        private void OnKeyDown(object sender, EventArgs e) {
+            int pxl = px;
+            int pyl = py;
+            if ((e as KeyEventArgs).KeyCode == Keys.Left || (e as KeyEventArgs).KeyCode == Keys.NumPad4
+                || (e as KeyEventArgs).KeyCode == Keys.NumPad7 || (e as KeyEventArgs).KeyCode == Keys.NumPad1)
+                px -= 1;
+            else if ((e as KeyEventArgs).KeyCode == Keys.Right || (e as KeyEventArgs).KeyCode == Keys.NumPad6
+                || (e as KeyEventArgs).KeyCode == Keys.NumPad9 || (e as KeyEventArgs).KeyCode == Keys.NumPad3)
+                px += 1;
+            if ((e as KeyEventArgs).KeyCode == Keys.Up || (e as KeyEventArgs).KeyCode == Keys.NumPad8
+                || (e as KeyEventArgs).KeyCode == Keys.NumPad7 || (e as KeyEventArgs).KeyCode == Keys.NumPad9)
+                py -= 1;
+            else if ((e as KeyEventArgs).KeyCode == Keys.Down || (e as KeyEventArgs).KeyCode == Keys.NumPad2
+                || (e as KeyEventArgs).KeyCode == Keys.NumPad1 || (e as KeyEventArgs).KeyCode == Keys.NumPad3)
+                py += 1;
+            if (map[px, py] == 0) {
+                px = pxl;
+                py = pyl;
+            }
+            else if(px != pxl || py != pyl){
+                Display_Player(btc, player);
+                Display_Player(btc, back, pxl, pyl);
+            }
         }
     }
 }
