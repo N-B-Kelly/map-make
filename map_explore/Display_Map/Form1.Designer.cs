@@ -26,7 +26,9 @@
         /// </summary>
         private void InitializeComponent () {
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
+            this.pictureBoxRight = new System.Windows.Forms.PictureBox();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBoxRight)).BeginInit();
             this.SuspendLayout();
             // 
             // pictureBox1
@@ -38,26 +40,37 @@
             this.pictureBox1.TabStop = false;
             this.pictureBox1.MouseDown += new System.Windows.Forms.MouseEventHandler(this.pictureBox1_Click);
             // 
+            // pictureBoxRight
+            // 
+            this.pictureBoxRight.Location = new System.Drawing.Point(585, 173);
+            this.pictureBoxRight.Name = "pictureBoxRight";
+            this.pictureBoxRight.Size = new System.Drawing.Size(100, 50);
+            this.pictureBoxRight.TabIndex = 1;
+            this.pictureBoxRight.TabStop = false;
+            // 
             // Map_Man
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(900, 501);
+            this.Controls.Add(this.pictureBoxRight);
             this.Controls.Add(this.pictureBox1);
             this.DoubleBuffered = true;
             this.Name = "Map_Man";
             this.Text = "Map Man";
             this.Load += new System.EventHandler(this.Form1_Load);
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
-            this.ResumeLayout(false);
+            this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.OnKeyDown);
             this.Resize += new System.EventHandler(this.OnResize);
-            this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.OnKeyDown) ;
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBoxRight)).EndInit();
+            this.ResumeLayout(false);
 
         }
 
         #endregion
 
         private System.Windows.Forms.PictureBox pictureBox1;
+        private System.Windows.Forms.PictureBox pictureBoxRight;
     }
 }
 

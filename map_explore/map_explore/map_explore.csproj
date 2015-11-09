@@ -45,6 +45,7 @@
   <ItemGroup>
     <Compile Include="Display\DisplayMan.cs" />
     <Compile Include="Display\File\WriteFile.cs" />
+    <Compile Include="Map\Explore\Explore.cs" />
     <Compile Include="Map\Generation\Master.cs" />
     <Compile Include="Map\Map.cs" />
     <Compile Include="Program.cs" />
