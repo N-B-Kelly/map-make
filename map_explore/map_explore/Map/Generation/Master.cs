@@ -95,6 +95,7 @@ namespace map_explore.Map.Generation
                     else mod[i, j] = mod[i, j] - thresh + 1;
             return mod;
         }
+
         /// <summary>
         /// Expand each room to perlin generated size
         /// </summary>
@@ -515,7 +516,7 @@ namespace map_explore.Map.Generation
         static pair q_closest (pair target, ArrayList nodes) {
             pair closest = (nodes[0] as pair);
             int dist = Math.Abs(closest.x - target.x) + Math.Abs(closest.y - target.y);
-            for (int i = 1; i < nodes.Count; i++) {
+            for (int i = 1; i < nodes.Count; i+=5) {
                 int dist2 = Math.Abs((nodes[i] as pair).x - target.x) + Math.Abs((nodes[i] as pair).y - target.y);
                 if (dist2 < dist) {
                     dist = dist2;
@@ -534,7 +535,7 @@ namespace map_explore.Map.Generation
         /// <param name="height"></param>
         /// <param name="mod"></param>
         /// <returns></returns>
-        static int[,] q_get_islands_2 (int width, int height, int[,] mod) {
+        static int[,] q_get_islands_2 (int width, int height, int[,] mod) { //NEXT ITERATION: USE A LIST OF CENTERS PER ISLAND, AND SELECT FROM THE CLOSEST IN THAT LIST!
             Console.WriteLine("Making islands");
             ArrayList islandList = q_islandGet(mod, width, height);
 
@@ -543,13 +544,14 @@ namespace map_explore.Map.Generation
             ArrayList resolvedList = new ArrayList();
 
             List<pair> centers = new List<pair>();
-
+            List<int> sizes = new List<int>();
             for (int i = 0; i < islandList.Count; i++) {
                 centers.Add(q_center(islandList[i] as ArrayList));
+                sizes.Add((islandList[i] as ArrayList).Count);
             }
 
             Console.WriteLine("Centers determined for all islands");
-            
+
             while (islandList.Count > 3) {
                 //declare four islands, pick one
                 int[] islandstouse = new int[] { rand.Next(islandList.Count), -1, -1, -1 }; //array of places in list to use
@@ -561,7 +563,6 @@ namespace map_explore.Map.Generation
                     else {
                         mod_rythm++;
                         for(int change = 0; change < 3; change++)
-                            
                             if(islandstouse[(change + mod_rythm)%3 + 1] == -1) {
                                 islandstouse[(change + mod_rythm) % 3 + 1] = i;
                                 break;
@@ -582,15 +583,15 @@ namespace map_explore.Map.Generation
                 //determine shortest path between each of these islands and the target island
                 pair ACloseB = q_closest(centerB, islandList[islandstouse[0]] as ArrayList);
                 pair BCloseA = q_closest(ACloseB, islandList[islandstouse[1]] as ArrayList);
-                int length_AB = Math.Abs(ACloseB.x - BCloseA.x) + Math.Abs(ACloseB.y - BCloseA.y);
+                int length_AB = Math.Abs(ACloseB.x - BCloseA.x) + Math.Abs(ACloseB.y - BCloseA.y) + (int)Math.Sqrt(Math.Pow(ACloseB.x - BCloseA.x, 2) + Math.Pow(ACloseB.y - BCloseA.y, 2));
 
                 pair ACloseC= q_closest(centerC, islandList[islandstouse[0]] as ArrayList);
                 pair CCloseA = q_closest(ACloseC, islandList[islandstouse[2]] as ArrayList);
-                int length_AC = Math.Abs(ACloseC.x - CCloseA.x) + Math.Abs(ACloseC.y - CCloseA.y);
+                int length_AC = Math.Abs(ACloseC.x - CCloseA.x) + Math.Abs(ACloseC.y - CCloseA.y) + (int)Math.Sqrt(Math.Pow(ACloseC.x - CCloseA.x, 2) + Math.Pow(ACloseC.y - CCloseA.y, 2));
 
                 pair ACloseD = q_closest(centerD, islandList[islandstouse[0]] as ArrayList);
                 pair DCloseA = q_closest(ACloseD, islandList[islandstouse[3]] as ArrayList);
-                int length_AD = Math.Abs(ACloseD.x - DCloseA.x) + Math.Abs(ACloseD.y - DCloseA.y);
+                int length_AD = Math.Abs(ACloseD.x - DCloseA.x) + Math.Abs(ACloseD.y - DCloseA.y) + (int)Math.Sqrt(Math.Pow(ACloseD.x - DCloseA.x, 2) + Math.Pow(ACloseD.y - DCloseA.y, 2));
 
                 List<int> sel = new List<int> { length_AB, length_AC, length_AD };
                 int shortest = Shortest(sel);
@@ -604,11 +605,13 @@ namespace map_explore.Map.Generation
 
                     //adjust center points - this isn't perfect, it just averages the centers
                     //maybe later I will make it take size into account - would mean I'd have to actually list size again :)
-                    centers[islandstouse[0]] = new pair((centers[islandstouse[0]].x + centers[islandstouse[1]].x) / 2, (centers[islandstouse[0]].y + centers[islandstouse[1]].y) / 2);
+                    centers[islandstouse[0]] = new pair((centers[islandstouse[0]].x * sizes[islandstouse[0]] + centers[islandstouse[1]].x * sizes[islandstouse[1]]) / 2*(sizes[islandstouse[1]] + sizes[islandstouse[0]]), 
+                        (centers[islandstouse[0]].y * sizes[islandstouse[0]] + centers[islandstouse[1]].y * sizes[islandstouse[1]]) / 2*(sizes[islandstouse[1]] + sizes[islandstouse[0]]));
 
                     //remove items from lists
                     islandList.RemoveAt(islandstouse[1]);
                     centers.RemoveAt(islandstouse[1]);
+                    sizes.RemoveAt(1);
                 }
                 else if (shortest == 1) {
                     //join the hallways
@@ -619,11 +622,13 @@ namespace map_explore.Map.Generation
 
                     //adjust center points - this isn't perfect, it just averages the centers
                     //maybe later I will make it take size into account - would mean I'd have to actually list size again :)
-                    centers[islandstouse[0]] = new pair((centers[islandstouse[0]].x + centers[islandstouse[2]].x) / 2, (centers[islandstouse[0]].y + centers[islandstouse[2]].y) / 2);
+                    centers[islandstouse[0]] = new pair((centers[islandstouse[0]].x * sizes[islandstouse[0]] + centers[islandstouse[2]].x * sizes[islandstouse[2]]) / 2 * (sizes[islandstouse[2]] + sizes[islandstouse[0]]),
+                        (centers[islandstouse[0]].y * sizes[islandstouse[0]] + centers[islandstouse[2]].y * sizes[islandstouse[2]]) / 2 * (sizes[islandstouse[2]] + sizes[islandstouse[0]]));
 
                     //remove items from lists
                     islandList.RemoveAt(islandstouse[2]);
                     centers.RemoveAt(islandstouse[2]);
+                    sizes.RemoveAt(2);
                 }
                 else if (shortest == 2) {
                     //join the hallways
@@ -634,11 +639,13 @@ namespace map_explore.Map.Generation
 
                     //adjust center points - this isn't perfect, it just averages the centers
                     //maybe later I will make it take size into account - would mean I'd have to actually list size again :)
-                    centers[islandstouse[0]] = new pair((centers[islandstouse[0]].x + centers[islandstouse[3]].x) / 2, (centers[islandstouse[0]].y + centers[islandstouse[3]].y) / 2);
+                    centers[islandstouse[0]] = new pair((centers[islandstouse[0]].x * sizes[islandstouse[0]] + centers[islandstouse[3]].x * sizes[islandstouse[3]]) / 2 * (sizes[islandstouse[3]] + sizes[islandstouse[0]]),
+                        (centers[islandstouse[0]].y * sizes[islandstouse[0]] + centers[islandstouse[3]].y * sizes[islandstouse[3]]) / 2 * (sizes[islandstouse[3]] + sizes[islandstouse[0]]));
 
                     //remove items from lists
                     islandList.RemoveAt(islandstouse[3]);
                     centers.RemoveAt(islandstouse[3]);
+                    sizes.RemoveAt(3);
                 }
             }
 
@@ -658,6 +665,41 @@ namespace map_explore.Map.Generation
             Console.WriteLine("Connected all islands");
 
             return mod;
+        }
+
+        static int[,] q_get_islands_3 (int width, int height, int[,] mod) { //THIS ITERATION: USE A LIST OF CENTERS PER ISLAND, AND SELECT FROM THE CLOSEST IN THAT LIST!
+            Console.WriteLine("Making islands");
+            ArrayList islandList = q_islandGet(mod, width, height);
+
+            Console.WriteLine(islandList.Count + " islands found");
+
+            ArrayList resolvedList = new ArrayList();
+
+            List<List<pair>> centers = new List<List<pair>>();
+            List<int> sizes = new List<int>();
+            for (int i = 0; i < islandList.Count; i++) {
+                centers.Add(new List<pair>(){q_center(islandList[i] as ArrayList)});
+                sizes.Add((islandList[i] as ArrayList).Count);
+            }
+
+            Console.WriteLine("Centers determined for all islands");
+
+            while (islandList.Count > 3) {
+                //declare four islands, pick one
+                int[] islandstouse = new int[] { rand.Next(islandList.Count), -1, -1, -1 }; //array of places in list to use
+
+                //pick the three closest islands
+                for (int i = 0; i < islandList.Count; i++)
+                    break;
+            }
+
+            
+            return mod;
+        }
+
+        static bool closest_less (List<List<pair>> pairlist) {
+
+
         }
 
         static int Shortest (List<int> sel) {

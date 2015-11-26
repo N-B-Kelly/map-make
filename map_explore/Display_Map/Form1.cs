@@ -34,8 +34,8 @@ namespace Display_Map
 
         int px;
         int py;
-        int width = 100;
-        int height = 100;
+        int width = 200;
+        int height = 200;
         float pixelWidth = 6;
         float pixelHeight = 6;
         int ca = 9;
@@ -165,6 +165,8 @@ namespace Display_Map
 
             int w = this.Size.Width / 2;
             int h = this.Size.Height;
+            if (w == 0 || h == 0)
+                return;
             pictureBox1.Width = w;
             pictureBox1.Height = h;
             pictureBoxRight.Height = h;
@@ -174,6 +176,8 @@ namespace Display_Map
             pixelWidth = w / width;
             pixelHeight = h / height;
 
+            if (pixelWidth == 0 || pixelHeight == 0)
+                return;
             pictureBox1.Refresh();
             pictureBoxRight.Refresh();
             graph = pictureBox1.CreateGraphics();
