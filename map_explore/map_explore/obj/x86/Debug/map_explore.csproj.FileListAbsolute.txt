@@ -8,3 +8,13 @@ C:\Users\Frank\Documents\GitHub\map-make\map_explore\map_explore\bin\Debug\map_e
 C:\Users\Frank\Documents\GitHub\map-make\map_explore\map_explore\obj\x86\Debug\map_explore.csprojResolveAssemblyReference.cache
 C:\Users\Frank\Documents\GitHub\map-make\map_explore\map_explore\obj\x86\Debug\map_explore.exe
 C:\Users\Frank\Documents\GitHub\map-make\map_explore\map_explore\obj\x86\Debug\map_explore.pdb
+C:\Users\USER\Desktop\map-make-master\map_explore\map_explore\obj\x86\Debug\map_explore.exe
+C:\Users\USER\Desktop\map-make-master\map_explore\map_explore\obj\x86\Debug\map_explore.pdb
+C:\Users\USER\Desktop\map-make-master\map_explore\map_explore\obj\x86\Debug\map_explore.csprojResolveAssemblyReference.cache
+C:\Users\USER\Desktop\map-make-master\map_explore\map_explore\bin\Debug\map_explore.exe
+C:\Users\USER\Desktop\map-make-master\map_explore\map_explore\bin\Debug\map_explore.pdb
+C:\Users\USER\Desktop\map_explore\map-make\map_explore\map_explore\bin\Debug\map_explore.exe
+C:\Users\USER\Desktop\map_explore\map-make\map_explore\map_explore\bin\Debug\map_explore.pdb
+C:\Users\USER\Desktop\map_explore\map-make\map_explore\map_explore\obj\x86\Debug\map_explore.csprojResolveAssemblyReference.cache
+C:\Users\USER\Desktop\map_explore\map-make\map_explore\map_explore\obj\x86\Debug\map_explore.exe
+C:\Users\USER\Desktop\map_explore\map-make\map_explore\map_explore\obj\x86\Debug\map_explore.pdb

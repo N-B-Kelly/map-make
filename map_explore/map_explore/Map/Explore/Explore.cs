@@ -5,113 +5,149 @@ using System.Text;
 
 namespace map_explore.Map.Explore {
     
-    
-    public class Explore {
-        static int unseen = 0;
-        static int seen = 1;
-        static int seen_wall = 2;
-        static int old_seen = 3;
-        static int old_seen_wall = 4;
-        static int open_space = 5;
 
-        public static int[,] genMask(int width, int height, int[,] map, int playerX, int playerY, int rad, int conserve) {
-            int[,] output = new int[width, height];
-            for (int x = playerX - rad; x <= playerX + rad; x++) {
-                for(int y = playerY - rad; y <= playerY + rad; y++)
-                    if(Math.Sqrt(Math.Pow(playerX - x, 2) + Math.Pow(playerY - y, 2)) <= rad + conserve)
-                        line(width, height, map, output, playerX, playerY, x, y);
-            }
+    public class Ex
+    {
+        static int floor = 1;
 
-            return output;
+        static int unlit = 0;
+        static int lit = 1;
+        static int seen = 2;
+
+        static int force = 1; //this is just a flag
+        static int slope (int x1, int y1, int x2, int y2) {
+            return (x1 - x2) / (y1 - y2);
         }
-        public static int[,] intersect(int width, int height, int[,] mask_old, int[,] mask) {
-            int[,] output = new int[width, height];
 
-            for (int i = 0; i < width; i++)
-                for (int j = 0; j < height; j++)
-                    if (mask[i, j] != 0)
-                        output[i, j] = mask[i, j];
-                    else if (mask_old[i, j] >= 1 && mask_old[i, j] < 3)
-                        output[i, j] = mask_old[i, j] + 2;
-                    else
-                        output[i, j] = mask_old[i, j];
-            return output;
-        }
-        public static int[,] highlight(int width, int height, int[,] mask) {
-            int[,] output = new int[width, height];
+        static int radius;
+        static int startx;
+        static int starty;
+        static int width;
+        static int height;
+        static int[,] lightMap;
+        static int[,] resMap;
+        static bool conservative;
 
-            for (int x = 1; x < width - 1; x++)
-                for (int y = 1; y < width - 1; y++)
-                    if (mask[x, y] == 0) {
-                        if (neighbors(x, y, mask) != 0)
-                            output[x, y] = open_space;
-                    }
-                    else output[x, y] = mask[x, y];
-            return output;
+
+        //Checks if region is within square/circle bounds
+        static bool inBounds (int dx, int dy, bool conserv, int rad) {
+            if (conserv)
+                return (dx * dx < rad * rad && dy * dy < rad * rad);
+            else
+                return (Math.Sqrt(Math.Abs(dx*dx + dy*dy)) < rad);
+
         }
-        static int neighbors(int x, int y, int[,] mask) {
-            int n = 0;
-            for(int i = x - 1; i <= x + 1; i++)
-                for (int j = y - 1; j <= y + 1; j++) {
-                    if (i == x && j == y)
+
+        //Calculates field of view of map, and compares it with old map
+        public static int[,] calcFOV(int[,] map, int width, int height, int radius, int startX, int startY, bool conserv, int[,] lastMap) {
+            
+            lightMap = new int[width, height];
+            lightMap[startX, startY] = force;   //light the starting cell
+            resMap = map;
+            Ex.radius = radius;
+            Ex.startx = startX;
+            Ex.starty = startY;
+            Ex.width = width;
+            Ex.height = height;
+            Ex.conservative = conserv;
+            // TO DO
+            //
+            castLight(1, 1, 0, 0, 1, 1, 0);
+            castLight(1, 1, 0, 1, 0, 0, 1);
+
+            castLight(1, 1, 0, 0, -1, 1, 0);
+            castLight(1, 1, 0, -1, 0, 0, 1);
+
+            castLight(1, 1, 0, 0, -1, -1, 0);
+            castLight(1, 1, 0, -1, 0, 0, -1);
+
+            castLight(1, 1, 0, 0, 1, -1, 0);
+            castLight(1, 1, 0, 1, 0, 0, -1);
+
+            mask(width, height, lastMap);
+            return lightMap;
+        }
+
+        //calculates field of view in a single quadrant
+        private static void castLight (int row, float start, float end, int xx, int xy, int yx, int yy) {
+            float newStart = 0;
+            if (start < end)
+                return;
+            bool blocked = false;
+            for (int distance = row; distance <= radius && !blocked; distance++) {
+                int deltaY = -distance;
+                for (int deltaX = -distance; deltaX <= 0; deltaX++) {
+                    //get our current cells
+                    int currentX = startx + deltaX * xx + deltaY * xy;
+                    int currentY = starty + deltaX * yx + deltaY * yy;
+
+                    //get out current slopes
+                    float leftSlope = (deltaX - 0.5f) / (deltaY + 0.5f);
+                    float rightSlope = (deltaX + 0.5f) / (deltaY - 0.5f);
+
+                    //make sure we're within bounds
+                    if (!(currentX >= 0 && currentY >= 0 && currentX < Ex.width && currentY < Ex.height) || start < rightSlope)
                         continue;
-                    if (mask[i, j] == 1 || mask[i, j] == 3)
-                        n++;
-                }
-            return n;
-        }
-        public static void line(int width, int height, int[,] map, int[,] mask, int x, int y, int px, int py) {
-            if (x < 0)
-                x = 0;
-            else if (x >= width)
-                x = width - 1;
-
-            if (y < 0)
-                y = 0;
-            else if (y >= height)
-                y = height - 1;
-
-            int lwidth = Math.Abs(x - px);
-            int lHeight = Math.Abs(y - py);
-            int sig1 = -Math.Sign(x - px);
-            int sig2 = -Math.Sign(y - py);
-
-            for (int i = 0; i < max(lHeight, lwidth); i++ ) {
-                int f1 = i;
-                int f2 = (int)((float)min(lwidth, lHeight) * (float)i / (float)max(lwidth, lHeight));
-                if (lHeight > lwidth) {
-                    if (map[x + sig1 * f2, y + sig2 * f1] == 1)
-                        mask[x + sig1 * f2, y + sig2 * f1] = seen;
-                    else {
-                        mask[x + sig1 * f2, y + sig2 * f1] = seen_wall;
+                    //if we are, check if we need to stop
+                    else if (end > leftSlope)
                         break;
-                    }
-                }
-                else {
-                    if (map[x + sig1 * f1, y + sig2 * f2] == 1)
-                        mask[x + sig1 * f1, y + sig2 * f2] = seen;
-                    else {
-                        mask[x + sig1 * f1, y + sig2 * f2] = seen_wall;
-                        break;
-                    }
+
+                    //check we're within the lightable area, then light if needed
+                    if (inBounds(deltaX, deltaY, conservative, radius))
+                        lightMap[currentX, currentY] = lit;
+
+
+                    if (blocked) //our previous cell was a blocking one
+                        if (resMap[currentX, currentY] == 0) {//we hit a wall
+                            newStart = rightSlope;
+                            continue;
+                        }
+                        else {
+                            blocked = false;
+                            start = newStart;
+                        }
+                    else
+                        if (resMap[currentX, currentY] == 0 && distance < radius) {//hit a wall within sight line
+                            blocked = true;
+                            castLight(distance + 1, start, leftSlope, xx, xy, yx, yy);
+                            newStart = rightSlope;
+                        }
                 }
             }
-
         }
 
-
-
-        //MIN OR MAX OF PAIR OF NUMBERS
-        static int min(int a, int b) {
-            if (a < b)
-                return a;
-            else return b;
-        }
-        static int max(int a, int b) {
-            if (a > b)
-                return a;
-            else return b;
+        //calculates field of view around a single area
+        static void mask (int width, int height, int[,] lastMap) {
+            for(int x = 1; x < width; x++)
+                for (int y = 1; y < height; y++) 
+                    if (lightMap[x, y] == lit)
+                        continue;
+                    else if (lastMap[x, y] == lit || lastMap[x, y] == seen)
+                        lightMap[x, y] = seen;
         }
 
+        public static int[,] highlight (int width, int height, int[,] lightmap, int[,] map) {
+            int[,] highlight = new int[width, height];
+            for (int x = 1; x < width - 1; x++)
+                for (int y = 1; y < height - 1; y++)
+                    if (lightmap[x, y] == 0)
+                        if (adjacent_lit_tiles(width, height, lightmap, map, x, y, floor) >= 1)
+                            highlight[x, y] = 1;
+
+            return highlight;
+        }
+
+        static int adjacent_lit_tiles (int width, int height, int[,] lightmap, int[,] map, int x, int y, int token) {
+            int ct = 0;
+            for (int i = -1; i < 2; i++)
+                for (int j = -1; j < 2; j++)
+                    if (i == 0 && j == 0)
+                        continue;
+                    else
+                        if(lightmap[x + i, y + j] == lit || lightmap[x + i, y + j] == seen)
+                            if(map[x + i, y + j] == token)
+                                ct++;
+            return ct;
+        }
     }
 }

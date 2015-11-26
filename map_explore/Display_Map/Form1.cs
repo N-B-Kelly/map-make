@@ -34,8 +34,8 @@ namespace Display_Map
 
         int px;
         int py;
-        int width = 50;
-        int height = 50;
+        int width = 100;
+        int height = 100;
         float pixelWidth = 6;
         float pixelHeight = 6;
         int ca = 9;
@@ -49,8 +49,7 @@ namespace Display_Map
 
         int[,] map;
         int[,] explore;
-        int[,] explore_last;
-
+        int[,] open;
         int delay = 15;
 
         public Map_Man () {
@@ -60,20 +59,18 @@ namespace Display_Map
         private void pictureBox1_Click (object sender, EventArgs e) {
             btc = new Bitmap(width * (int)pixelWidth, height * (int)pixelHeight);
             maskmap = new Bitmap(width * (int)pixelWidth, height * (int)pixelHeight);
-            if ((e as System.Windows.Forms.MouseEventArgs).Button == MouseButtons.Right) {
+            if ((e as System.Windows.Forms.MouseEventArgs).Button == MouseButtons.Right) // constrained generation
                 for (int i = 0; i <= cs; i++) {
                     map = map_explore.Map.Generation.Master.constrained_stepper(width, height, i, cs, map);
                     Display_Image(btc);
                     Thread.Sleep(delay);
                 }
-            }
-            else {
-                for (int i = 0; i < 3 + ca + cb + cc; i++) {
+            else for (int i = 0; i < 3 + ca + cb + cc; i++) { //non constrained
                     map = map_explore.Map.Generation.Master.stepper(width, height, i, 2 + ca, 2 + ca + cb, 2 + ca + cb + cc, map);
                     Display_Image(btc);
                     Thread.Sleep(delay);
                 }
-            }
+
             Random playerX = new Random();
 
             do {
@@ -83,19 +80,11 @@ namespace Display_Map
             while (map[px, py] != 1);
 
             Display_Player(btc, player);
-            explore = map_explore.Map.Explore.Explore.genMask(width, height, map, px, py, visrad, conservative_radius);
-            explore_last = explore;
-            explore = map_explore.Map.Explore.Explore.highlight(width, height, explore);
-            Display_mask(maskmap);
-            Mask_Player(maskmap, player2, px, py);
 
-            String str = "Map Man {conservative(\\): ";
-            if (conservative_radius == 1)
-                str += "yes";
-            else
-                str += "no";
-            str += ", vision radius([,]): " + visrad + "}";
-            this.Text = str;
+            explore = map_explore.Map.Explore.Ex.calcFOV(map, width, height, visrad, px, py, (conservative_radius == 1), new int[width, height]);
+            open = map_explore.Map.Explore.Ex.highlight(width, height, explore, map);
+            Display_mask(maskmap);
+            Mask_Player(maskmap, player, px, py);
         }
 
         private void Display_Image (Bitmap btc) {
@@ -113,26 +102,26 @@ namespace Display_Map
             pictureBox1.Image = btc;
             pictureBox1.Refresh();
         }
-        private void Display_mask(Bitmap maskmap) {
+        private void Display_mask (Bitmap maskmap) {
             Graphics g = Graphics.FromImage(maskmap);
             g.FillRectangle(unreachable, 0, 0, (float)width * pixelWidth, (float)height * pixelHeight);
-            for(int x = 0; x < width; x++)
+            for (int x = 0; x < width; x++)
                 for (int y = 0; y < height; y++) {
-                    if (explore[x, y] == 1)
-                        g.FillRectangle(floor_seen, x * pixelWidth, y * pixelHeight, pixelWidth, pixelHeight);
-                    else if (explore[x, y] == 2)
-                        g.FillRectangle(wall_seen, x * pixelWidth, y * pixelHeight, pixelWidth, pixelHeight);
-                    else if (explore[x, y] == 3)
-                        g.FillRectangle(floor_stale, x * pixelWidth, y * pixelHeight, pixelWidth, pixelHeight);
-                    else if (explore[x, y] == 4)
-                        g.FillRectangle(wall_stale, x * pixelWidth, y * pixelHeight, pixelWidth, pixelHeight);
-                    else if (explore[x, y] == 5)
+                    if(explore[x, y] == 1)
+                        if(map[x, y] == 0)
+                            g.FillRectangle(wall_seen, x * pixelWidth, y * pixelHeight, pixelWidth, pixelHeight);
+                        else
+                            g.FillRectangle(floor_seen, x * pixelWidth, y * pixelHeight, pixelWidth, pixelHeight);
+                    else if(explore[x, y] == 2)
+                        if (map[x, y] == 0)
+                            g.FillRectangle(wall_stale, x * pixelWidth, y * pixelHeight, pixelWidth, pixelHeight);
+                        else
+                            g.FillRectangle(floor_stale, x * pixelWidth, y * pixelHeight, pixelWidth, pixelHeight);
+                    else if (open[x, y] == 1)
                         g.FillRectangle(highlight, x * pixelWidth, y * pixelHeight, pixelWidth, pixelHeight);
                 }
             g.Flush();
-
             pictureBoxRight.Image = maskmap;
-            //pictureBoxRight.Refresh();
         }
         private void Display_Player(Bitmap btc, Brush pcol) {
             Graphics g = Graphics.FromImage(btc);
@@ -173,18 +162,33 @@ namespace Display_Map
         }
 
         private void OnResize(object sender, EventArgs e) {
-            pictureBox1.Width = (this.Width - 8)/2;
-            pictureBox1.Height = this.Height - 28;
-            pictureBoxRight.Height = pictureBox1.Height;
-            pictureBoxRight.Width = pictureBox1.Width;
-            pictureBoxRight.Location = new Point(pictureBoxRight.Width, 0);
 
-            graph = pictureBox1.CreateGraphics();
-            pixelWidth = (float)pictureBox1.Width / (float)width;
-            pixelHeight = (float)pictureBox1.Height / (float)height;
+            int w = this.Size.Width / 2;
+            int h = this.Size.Height;
+            pictureBox1.Width = w;
+            pictureBox1.Height = h;
+            pictureBoxRight.Height = h;
+            pictureBoxRight.Width = w;
+            pictureBoxRight.Location = new Point(w, 0);
+
+            pixelWidth = w / width;
+            pixelHeight = h / height;
 
             pictureBox1.Refresh();
             pictureBoxRight.Refresh();
+            graph = pictureBox1.CreateGraphics();
+
+            //redraw
+            btc = new Bitmap(width * (int)pixelWidth, height * (int)pixelHeight);
+            maskmap = new Bitmap(width * (int)pixelWidth, height * (int)pixelHeight);
+
+            Display_Image(btc);
+            Display_Player(btc, player);
+
+            explore = map_explore.Map.Explore.Ex.calcFOV(map, width, height, visrad, px, py, (conservative_radius == 1), new int[width, height]);
+            open = map_explore.Map.Explore.Ex.highlight(width, height, explore, map);
+            Display_mask(maskmap);
+            Mask_Player(maskmap, player, px, py);
         }
         private void OnKeyDown(object sender, EventArgs e) {
             int pxl = px;
@@ -223,10 +227,8 @@ namespace Display_Map
                 else
                     conservative_radius = 1;
 
-            explore_last = explore;
-            explore = map_explore.Map.Explore.Explore.genMask(width, height, map, px, py, visrad, conservative_radius);
-            explore = map_explore.Map.Explore.Explore.intersect(width, height, explore_last, explore);
-            explore = map_explore.Map.Explore.Explore.highlight(width, height, explore);
+            explore = map_explore.Map.Explore.Ex.calcFOV(map, width, height, visrad, px, py, (conservative_radius == 1), explore);
+            open = map_explore.Map.Explore.Ex.highlight(width, height, explore, map);
             Display_mask(maskmap);
             Mask_Player(maskmap, player, px, py);
 
