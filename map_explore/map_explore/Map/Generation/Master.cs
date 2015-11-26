@@ -687,21 +687,70 @@ namespace map_explore.Map.Generation
             while (islandList.Count > 3) {
                 //declare four islands, pick one
                 int[] islandstouse = new int[] { rand.Next(islandList.Count), -1, -1, -1 }; //array of places in list to use
-
+                int[] indies = new int[] { 0, -1, -1, -1 };
                 //pick the three closest islands
-                for (int i = 0; i < islandList.Count; i++)
-                    break;
+                for (int i = 0; i < islandList.Count; i++) {
+                    if (islandstouse.Contains(i))
+                        continue;
+                    else for(int change = 0; change < 3; change++)
+                        //handle the base case: there is nothing here
+                        if (islandstouse[1 + (change + mod_rythm) % 3] == -1) {
+                            islandstouse[(change + mod_rythm) % 3 + 1] = i;
+
+                            if(centers[indies[(change + mod_rythm) % 3 + 1]].Count == 1)
+                                indies[1 + (change + mod_rythm) % 3] = closest_less(centers[i], centers[islandstouse[1 + (change + mod_rythm) % 3]][0]);//this just gets the base region: we probably don't want that
+                            else
+                                closest_more(centers[i], centers[islandstouse[1 + (change + mod_rythm) % 3]], closest_less(centers[i], centers[islandstouse[1 + (change + mod_rythm) % 3]][indies[1 + (change + mod_rythm) % 3]]));
+
+
+                            //TO DO: FINISH THIS
+                        }
+                
+                }
+                 
             }
 
             
             return mod;
         }
 
-        static bool closest_less (List<List<pair>> pairlist) {
-
-
+        static int closest_less (List<pair> pairlist, pair _pair) {
+            int shortest = 0;
+            int dist = select_dist(pairlist[0], _pair);
+            for (int i = 1; i < pairlist.Count; i++) {
+                int k = select_dist(pairlist[i], _pair);
+                if (k < dist) {
+                    dist = k;
+                    shortest = i;
+                }
+            }
+            return shortest;
         }
 
+        //WE NEED MAJOR CHANGES HERE!!!!
+        static pair closest_more (List<pair> pairlist, List<pair> competingList, int shortest) { //NOTE: WE ONLY NEED KEEP TRACK OF ONE SIDE SHORTEST DIST
+
+            int low_i = -1;
+            int low_j = -1;
+            for (int i = 0; i < pairlist.Count; i++)
+                for (int j = 0; j < competingList.Count; j++) {
+                    int k = select_dist(pairlist[i], competingList[j]);
+                    if (k < shortest) {
+                        shortest = k;
+                        low_i = i;
+                        low_j = j;
+                    }
+                }
+            return new pair(low_i, closest_less(pairlist, competingList[low_i])); //pack this for ease of use
+        }
+
+        //applies distance calculation to a pair
+        static int select_dist (pair x, pair y) {
+            int dist = Math.Abs(x.x - y.x) + Math.Abs(x.y - y.y);
+            dist += (int)Math.Sqrt(Math.Pow(x.x - y.x, 2) + Math.Pow(x.y - y.y, 2));
+            return dist/2;
+
+        }
         static int Shortest (List<int> sel) {
             int sh = 0;
             for (int i = 1; i < sel.Count; i++)

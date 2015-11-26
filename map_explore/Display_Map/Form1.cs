@@ -34,8 +34,8 @@ namespace Display_Map
 
         int px;
         int py;
-        int width = 200;
-        int height = 200;
+        int width = 50;
+        int height = 50;
         float pixelWidth = 6;
         float pixelHeight = 6;
         int ca = 9;
