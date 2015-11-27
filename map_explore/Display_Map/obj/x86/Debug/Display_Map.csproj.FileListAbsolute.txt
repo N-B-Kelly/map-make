@@ -74,3 +74,13 @@ C:\Users\USER\Desktop\map_explore\map-make\map_explore\Display_Map\obj\x86\Debug
 C:\Users\USER\Desktop\map_explore\map-make\map_explore\Display_Map\obj\x86\Debug\Display_Map.Map_Man.resources
 C:\Users\USER\Desktop\map_explore\map-make\map_explore\Display_Map\obj\x86\Debug\Display_Map.Properties.Resources.resources
 C:\Users\USER\Desktop\map_explore\map-make\map_explore\Display_Map\obj\x86\Debug\Display_Map.csproj.GenerateResource.Cache
+C:\Users\Frank\Desktop\map-make\map_explore\Display_Map\obj\x86\Debug\Display_Map.exe
+C:\Users\Frank\Desktop\map-make\map_explore\Display_Map\obj\x86\Debug\Display_Map.pdb
+C:\Users\Frank\Desktop\map-make\map_explore\Display_Map\bin\Debug\Display_Map.exe
+C:\Users\Frank\Desktop\map-make\map_explore\Display_Map\bin\Debug\Display_Map.pdb
+C:\Users\Frank\Desktop\map-make\map_explore\Display_Map\bin\Debug\map_explore.exe
+C:\Users\Frank\Desktop\map-make\map_explore\Display_Map\bin\Debug\map_explore.pdb
+C:\Users\Frank\Desktop\map-make\map_explore\Display_Map\obj\x86\Debug\Display_Map.csprojResolveAssemblyReference.cache
+C:\Users\Frank\Desktop\map-make\map_explore\Display_Map\obj\x86\Debug\Display_Map.Map_Man.resources
+C:\Users\Frank\Desktop\map-make\map_explore\Display_Map\obj\x86\Debug\Display_Map.Properties.Resources.resources
+C:\Users\Frank\Desktop\map-make\map_explore\Display_Map\obj\x86\Debug\Display_Map.csproj.GenerateResource.Cache
