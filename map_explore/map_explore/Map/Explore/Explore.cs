@@ -26,9 +26,16 @@ namespace map_explore.Map.Explore {
         static int height;
         static int[,] lightMap;
         static int[,] resMap;
+        public static int[,] oldmap;
         static bool conservative;
 
+        public static int[,] region;
+        public static int[,] region_last;
 
+        static int[,] highlit;
+
+        static int width_last;
+        static int height_last;
         //Checks if region is within square/circle bounds
         static bool inBounds (int dx, int dy, bool conserv, int rad) {
             if (conserv)
@@ -38,9 +45,33 @@ namespace map_explore.Map.Explore {
 
         }
 
+        static bool israd(int x, int y, int width, int height) {
+            return (y >= 0 && y < width && x >= 0 && x < width);
+        }
+
         //Calculates field of view of map, and compares it with old map
         public static int[,] calcFOV(int[,] map, int width, int height, int radius, int startX, int startY, bool conserv, int[,] lastMap) {
-            
+
+
+            if (region == null || width != width_last || height != height_last) {
+                highlit = new int[width, height];
+                region = new int[width, height];
+                Machina.tally = new int[width, height];
+            }
+
+            if (Machina.tally == null)
+                Machina.tally = new int[width, height];
+
+            region_last = region;
+            width_last = width;
+            height_last = height;
+
+            region = new int[width, height];
+            if (lightMap != null)
+                oldmap = lightMap;
+            else
+                oldmap = new int[width, height];
+
             lightMap = new int[width, height];
             lightMap[startX, startY] = force;   //light the starting cell
             resMap = map;
@@ -93,8 +124,18 @@ namespace map_explore.Map.Explore {
                         break;
 
                     //check we're within the lightable area, then light if needed
-                    if (inBounds(deltaX, deltaY, conservative, radius))
+                    if (inBounds(deltaX, deltaY, conservative, radius)) {
                         lightMap[currentX, currentY] = lit;
+                        region[currentX, currentY] = 1;
+                        if(highlit != null)
+                            if (highlit[currentX, currentY] == 1 || Machina.tally[currentX, currentY] != 0) {
+                                for (int x = currentX - radius - 1; x <= currentX + radius + 1; x++)
+                                    for (int y = currentY - radius - 1; y <= currentY + radius + 1; y++)
+                                        if (israd(x, y, width, height))
+                                            if(Machina.tally[currentX, currentY] != 0)
+                                                region[x, y] = 1;
+                        }
+                    }
 
 
                     if (blocked) //our previous cell was a blocking one
@@ -133,7 +174,7 @@ namespace map_explore.Map.Explore {
                     if (lightmap[x, y] == 0)
                         if (adjacent_lit_tiles(width, height, lightmap, map, x, y, floor) >= 1)
                             highlight[x, y] = 1;
-
+            highlit = highlight;
             return highlight;
         }
 
@@ -149,5 +190,278 @@ namespace map_explore.Map.Explore {
                                 ct++;
             return ct;
         }
+    }
+
+    public class Machina
+    {
+        static int unlit = 0;
+        static int lit = 1;
+
+        public static int[,] scoreboard (int[,] map, int[,] lit, int[,] highlight, int width, int height, int radius, bool conserv, int[,] visited) {
+            scoremap = new int[width, height];
+            lights = lit;
+            Machina.highlight = highlight;
+            Machina.visited = visited;
+            for(int x = 0; x < width; x++)
+                for (int y = 0; y < height; y++) {
+                    if (highlight[x, y] == 1)
+                        calcFOV(map, width, height, radius, x, y, conserv);
+                }
+
+            return scoremap;
+        }
+
+        static int[,] highlight;
+        static int[,] lights;
+        static int[,] scoremap;
+        static int[,] resMap;
+        static int[,] visited;
+        static int[,] visited_2;
+        static int rad;
+        static int startX;
+        static int startY;
+        static int width;
+        static int height;
+        static bool conservative;
+
+        //Calculates field of view of map, and compares it with old map
+        public static int[,] calcFOV (int[,] map, int width, int height, int radius, int startX, int startY, bool conserv) {
+            //scoremap[startX, startY] = force;   //light the starting cell
+            resMap = map;
+            Machina.rad = radius;
+            Machina.startX = startX;
+            Machina.startY = startY;
+            Machina.width = width;
+            Machina.height = height;
+            Machina.conservative = conserv;
+            // TO DO
+            //
+            castLight(1, 1, 0, 0, 1, 1, 0);
+            castLight(1, 1, 0, 1, 0, 0, 1);
+
+            castLight(1, 1, 0, 0, -1, 1, 0);
+            castLight(1, 1, 0, -1, 0, 0, 1);
+
+            castLight(1, 1, 0, 0, -1, -1, 0);
+            castLight(1, 1, 0, -1, 0, 0, -1);
+
+            castLight(1, 1, 0, 0, 1, -1, 0);
+            castLight(1, 1, 0, 1, 0, 0, -1);
+
+            return scoremap;
+        }
+
+        public static int[,] q_scoreboard (int[,] map, int[,] lit, int[,] highlight, int width, int height, int radius, bool conserv, ref int[,] visited) {
+            int checks = 0;
+            scoremap = new int[width, height];
+            lights = lit;
+            Machina.highlight = highlight;
+            Machina.visited = visited;
+            for (int x = 0; x < width; x++)
+                for (int y = 0; y < height; y++) {
+                    if (visited[x, y] == 0 && lit[x, y] != 0 && map[x, y] == 1) {
+                        q_calcFOV(map, width, height, radius, x, y, conserv);
+                        checks++;
+                        if (scoremap[x, y] == 0)
+                            visited[x, y] = 1;
+                    }
+                }
+            Console.WriteLine("baseline mode - Checks: " + checks);
+            return scoremap;
+        }
+
+        public static void dispose () {
+            tally = null;
+        }
+        public static int[,] q_calcFOV (int[,] map, int width, int height, int radius, int startX, int startY, bool conserv) {
+            //scoremap[startX, startY] = force;   //light the starting cell
+            resMap = map;
+            Machina.rad = radius;
+            Machina.startX = startX;
+            Machina.startY = startY;
+            Machina.width = width;
+            Machina.height = height;
+            Machina.conservative = conserv;
+            // TO DO
+            //
+            castLight(1, 1, 0, 0, 1, 1, 0);
+            castLight(1, 1, 0, 1, 0, 0, 1);
+
+            castLight(1, 1, 0, 0, -1, 1, 0);
+            castLight(1, 1, 0, -1, 0, 0, 1);
+
+            castLight(1, 1, 0, 0, -1, -1, 0);
+            castLight(1, 1, 0, -1, 0, 0, -1);
+
+            castLight(1, 1, 0, 0, 1, -1, 0);
+            castLight(1, 1, 0, 1, 0, 0, -1);
+
+            if (scoremap[startX, startY] == 0)
+                visited[startX, startY] = 1;
+
+            return scoremap;
+        }
+        //Checks if region is within square/circle bounds
+        static bool inBounds (int dx, int dy, bool conserv, int rad) {
+            if (conserv)
+                return (dx * dx < rad * rad && dy * dy < rad * rad);
+            else
+                return (Math.Sqrt(Math.Abs(dx * dx + dy * dy)) < rad);
+
+        }
+
+        //calculates field of view in a single quadrant
+        private static void castLight (int row, float start, float end, int xx, int xy, int yx, int yy) {
+            float newStart = 0;
+            if (start < end)
+                return;
+            bool blocked = false;
+            for (int distance = row; distance <= rad && !blocked; distance++) {
+                int deltaY = -distance;
+                for (int deltaX = -distance; deltaX <= 0; deltaX++) {
+                    //get our current cells
+                    int currentX = startX + deltaX * xx + deltaY * xy;
+                    int currentY = startY + deltaX * yx + deltaY * yy;
+
+                    //get out current slopes
+                    float leftSlope = (deltaX - 0.5f) / (deltaY + 0.5f);
+                    float rightSlope = (deltaX + 0.5f) / (deltaY - 0.5f);
+
+                    //make sure we're within bounds
+                    if (!(currentX >= 0 && currentY >= 0 && currentX < width && currentY < height) || start < rightSlope)
+                        continue;
+                    //if we are, check if we need to stop
+                    else if (end > leftSlope)
+                        break;
+
+                    //check we're within the target area, and if we're a highlight, then mark as lit if true
+                    if (inBounds(deltaX, deltaY, conservative, rad) && highlight[currentX, currentY] == lit)
+                        scoremap[startX, startY] += 2*lit;
+
+
+                    if (blocked) //our previous cell was a blocking one
+                        if (resMap[currentX, currentY] == 0 || lights[currentX, currentY] == unlit || visited[currentX, currentY] == 1) {//we hit a wall, or we can't see there!
+                            newStart = rightSlope;
+                            continue;
+                        }
+                        else {
+                            blocked = false;
+                            start = newStart;
+                        }
+                    else
+                        if ((resMap[currentX, currentY] == 0 || lights[currentX, currentY] == unlit || visited[currentX, currentY] == 1) && distance < rad ) {//hit a wall within sight line
+                            blocked = true;
+                            castLight(distance + 1, start, leftSlope, xx, xy, yx, yy);
+                            newStart = rightSlope;
+                        }
+                }
+            }
+        }
+
+        public static int[,] q_scoreboard_2 (int[,] map, int[,] lit, int[,] highlight, int width, int height, int radius, bool conserv, ref int[,] visited) {
+            
+            int checks = 0;
+            scoremap = new int[width, height];
+            if (tally == null)
+                tally = scoremap;
+            scoremap = tally;
+
+            lights = lit;
+            Machina.highlight = highlight;
+            Machina.visited_2 = visited;
+            for (int x = 0; x < width; x++)
+                for (int y = 0; y < height; y++) {
+                    if ((visited[x, y] == 0 && lit[x, y] != unlit && map[x, y] == 1) && (Ex.region[x, y] == 1 || Ex.region_last[x, y] == 1)) {
+                        scoremap[x, y] = 0;
+                        calcFOV(map, width, height, radius, x, y, conserv);
+                        checks++;
+                        if (scoremap[x, y] == 0)
+                            visited[x, y] = 1;
+                    }
+                }
+            Console.WriteLine("Optimum mode - Checks: " + checks);
+            return scoremap;
+        }
+
+        public static int[,] tally;
+        public static int[,] q_calcFOV_2 (int[,] map, int width, int height, int radius, int startX, int startY, bool conserv) {
+            //scoremap[startX, startY] = force;   //light the starting cell
+            resMap = map;
+            Machina.rad = radius;
+            Machina.startX = startX;
+            Machina.startY = startY;
+            Machina.width = width;
+            Machina.height = height;
+            Machina.conservative = conserv;
+
+            // TO DO
+            //
+            castLight_2(1, 1, 0, 0, 1, 1, 0);
+            castLight_2(1, 1, 0, 1, 0, 0, 1);
+
+            castLight_2(1, 1, 0, 0, -1, 1, 0);
+            castLight_2(1, 1, 0, -1, 0, 0, 1);
+
+            castLight_2(1, 1, 0, 0, -1, -1, 0);
+            castLight_2(1, 1, 0, -1, 0, 0, -1);
+
+            castLight_2(1, 1, 0, 0, 1, -1, 0);
+            castLight_2(1, 1, 0, 1, 0, 0, -1);
+
+            if (scoremap[startX, startY] == 0)
+                visited[startX, startY] = 1;
+
+            return scoremap;
+        }
+        //Checks if region is within square/circle bounds
+
+        //calculates field of view in a single quadrant
+        private static void castLight_2 (int row, float start, float end, int xx, int xy, int yx, int yy) {
+            float newStart = 0;
+            if (start < end)
+                return;
+            bool blocked = false;
+            for (int distance = row; distance <= rad && !blocked; distance++) {
+                int deltaY = -distance;
+                for (int deltaX = -distance; deltaX <= 0; deltaX++) {
+                    //get our current cells
+                    int currentX = startX + deltaX * xx + deltaY * xy;
+                    int currentY = startY + deltaX * yx + deltaY * yy;
+
+                    //get out current slopes
+                    float leftSlope = (deltaX - 0.5f) / (deltaY + 0.5f);
+                    float rightSlope = (deltaX + 0.5f) / (deltaY - 0.5f);
+
+                    //make sure we're within bounds
+                    if (!(currentX >= 0 && currentY >= 0 && currentX < width && currentY < height) || start < rightSlope)
+                        continue;
+                    //if we are, check if we need to stop
+                    else if (end > leftSlope)
+                        break;
+
+                    //check we're within the target area, and if we're a highlight, then mark as lit if true
+                    if (inBounds(deltaX, deltaY, conservative, rad) && highlight[currentX, currentY] == lit)
+                        scoremap[startX, startY] += 2 * lit;
+
+
+                    if (blocked) //our previous cell was a blocking one
+                        if (resMap[currentX, currentY] == 0 || lights[currentX, currentY] == unlit/* || visited[currentX, currentY] == 1*/) {//we hit a wall, or we can't see there!
+                            newStart = rightSlope;
+                            continue;
+                        }
+                        else {
+                            blocked = false;
+                            start = newStart;
+                        }
+                    else
+                        if ((resMap[currentX, currentY] == 0 || lights[currentX, currentY] == unlit/* || visited[currentX, currentY] == 1*/) && distance < rad) {//hit a wall within sight line
+                            blocked = true;
+                            castLight(distance + 1, start, leftSlope, xx, xy, yx, yy);
+                            newStart = rightSlope;
+                        }
+                }
+            }
+        }
+
     }
 }

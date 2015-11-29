@@ -287,7 +287,7 @@ namespace map_explore.Map.Generation {
             }
 
             else {
-                crass = cellular(width, height, 9, 9, 15, 4, 5, crass);
+                //crass = cellular(width, height, 9, 9, 15, 4, 5, crass);
                 borderize(width, height, crass);
                 q_get_islands_5(width, height, crass);
             }
