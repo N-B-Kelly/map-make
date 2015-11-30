@@ -19,9 +19,7 @@ There are two files:<br/>
     then dumps it in a text file and (probably) tries to open it with emacs  <br/>
     <br/>
   the main function of map_explore is also outdated, and will either be cleaned up later, or just turned into a dll, as the componenents are required for proper function.<br/>
-</dl>
-
-  The window will adjust the sizes of the textboxes as you resize it, so don't be afraid to do that if you're looking at pixels.
+  The window will adjust the sizes of the textboxes as you resize it, so don't be afraid to do that if you're looking at pixels.</dl>
   
 -----------------------------------------------------  
 
