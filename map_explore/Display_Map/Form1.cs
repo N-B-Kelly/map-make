@@ -11,8 +11,9 @@ using map_explore.Map;
 using map_explore.Display;
 using map_explore.Display.File;
 using map_explore.Map.Explore;
+using map_explore.Algorithm;
+using SettlersEngine;
 using System.Threading;
-using System.Linq;
 
 namespace Display_Map
 {
@@ -54,10 +55,9 @@ namespace Display_Map
         int[,] map;
         int[,] explore;
         int[,] open;
+        
         int[,] scoreMap;
-        int[,] scoreMap_alt;
         int[,] visited;
-        int[,] visited_2;
 
         int delay = 15;
 
@@ -105,7 +105,6 @@ namespace Display_Map
             Display_Player(btc, player, pictureBox1);
 
             visited = new int[width, height];
-            visited_2 = new int[width, height];
             //visited[px, py] = 1;
             explore = map_explore.Map.Explore.Ex.calcFOV(map, width, height, visrad, px, py, (conservative_radius == 1), new int[width, height]);
             open = map_explore.Map.Explore.Ex.highlight(width, height, explore, map);
@@ -134,7 +133,6 @@ namespace Display_Map
             Display_Player(btc, player, pictureBox1);
 
             visited = new int[width, height];
-            visited_2 = new int[width, height];
             //visited[px, py] = 1;
 
             explore = map_explore.Map.Explore.Ex.calcFOV(map, width, height, visrad, px, py, (conservative_radius == 1), new int[width, height]);
@@ -194,33 +192,14 @@ namespace Display_Map
             input.Image = btc;
             pictureBox1.Refresh();
         }
-        private void Display_Score (Bitmap btc, PictureBox input) {
-            Graphics g = Graphics.FromImage(btc);
-            g.FillRectangle(new SolidBrush(Color.Black), 0, 0, (float)width * pixelWidth, (float)height * pixelHeight);
-            for (int k = 0; k < width; k++) {
-                for (int j = 0; j < height; j++) {
-                    if (scoreMap[k, j] != 0) {
-                        int col = (40 + (scoreMap[k, j] * 5)/2);
-                        if (col >= 246)
-                            col = 245;
-                        g.FillRectangle(new SolidBrush(Color.FromArgb(col, col, col + 10)), k * pixelWidth, j * pixelHeight, pixelWidth, pixelHeight);
-                    }
-                    else if (open[k, j] == 1)
-                        g.FillRectangle(highlight, k * pixelWidth, j * pixelHeight, pixelWidth, pixelHeight);
-                }
-            }
-            g.Flush();
 
-            input.Image = btc;
-            input.Refresh();
-        }
         private void Display_Score_alt (Bitmap btc, PictureBox input) {
             Graphics g = Graphics.FromImage(btc);
             g.FillRectangle(new SolidBrush(Color.Black), 0, 0, (float)width * pixelWidth, (float)height * pixelHeight);
             for (int k = 0; k < width; k++) {
                 for (int j = 0; j < height; j++) {
-                    if (scoreMap_alt[k, j] != 0) {
-                        int col = (40 + (scoreMap_alt[k, j] * 5) / 2);
+                    if (scoreMap[k, j] != 0) {
+                        int col = (40 + (scoreMap[k, j]) / 5);
                         if (col >= 246)
                             col = 245;
                         g.FillRectangle(new SolidBrush(Color.FromArgb(col, col, col + 10)), k * pixelWidth, j * pixelHeight, pixelWidth, pixelHeight);
@@ -327,7 +306,6 @@ namespace Display_Map
                 else
                     conservative_radius = 1;
                 visited = new int[width, height];
-                visited_2 = new int[width, height];
                 //visited[px, py] = 1;
             }
 
@@ -368,36 +346,30 @@ namespace Display_Map
             }
             explore = map_explore.Map.Explore.Ex.calcFOV(map, width, height, visrad, px, py, (conservative_radius == 1), explore);
             open = map_explore.Map.Explore.Ex.highlight(width, height, explore, map);
-            scoreMap = map_explore.Map.Explore.Machina.q_scoreboard(map, explore, open, width, height, visrad, (conservative_radius == 1), ref visited);
-            scoreMap_alt = map_explore.Map.Explore.Machina.q_scoreboard_2(map, explore, open, width, height, visrad, (conservative_radius == 1), ref visited_2);
+            
+            scoreMap = map_explore.Map.Explore.Machina.q_scoreboard_2(map, explore, open, width, height, visrad, (conservative_radius == 1), ref visited);
 
             if (display_score_mode) {
                 Display_Score_alt(btc, pictureBox1);
-
-
-                //Display_mask(btc, pictureBox1);
                 Mask_Player(btc, player, px, py, pictureBox1);
             }
             else {
                 Display_Player(btc, back, pxl, pyl, pictureBox1);
                 Display_Player(btc, player, pictureBox1);
             }
-            if (display_score_mode) {
-                Display_Score(maskmap, pictureBoxRight);
-                Mask_Player(maskmap, player, px, py, pictureBoxRight);
-            }
-            else {
+
+            
                 Display_mask(maskmap, pictureBoxRight);
                 Mask_Player(maskmap, player, px, py, pictureBoxRight);
-            }
+            
 
-            Console.Write("Maps equal: ");
-            bool k = equal(scoreMap, scoreMap_alt, width, height);
-            if (k)
-                Console.WriteLine("true");
+
             
             visited[px, py] = 1;
-            visited_2[px, py] = 1;
+
+            if ((e as KeyEventArgs).KeyCode == Keys.Space) {
+                Solve(0);
+            }
 
             String str = "Map Man {  options: [ ] | C V   - -  W: " + width + ", H: " + height + "   - -  ";
             if (conservative_radius == 1)
@@ -417,6 +389,91 @@ namespace Display_Map
                         return false;
                     }
             return true;
+        }
+
+        void Solve (int timescale) {
+            while (true) {
+
+                Thread.Sleep(timescale);
+                int k = nodes_to_find();
+                if (k == 0) {
+                    Display_Image(btc, pictureBox1);
+                    Display_Player(btc, back, px, py, pictureBox1);
+                    Display_Player(btc, player, pictureBox1);
+                    return;
+                }
+
+                List<Point> p = points_to_find();
+
+                map_explore.Algorithm.Defgrid[,] dg = map_explore.Algorithm.Defgrid.initGrid(map, explore, width, height);
+
+                List<int> scores = new List<int>();
+
+                SettlersEngine.SpatialAStar<map_explore.Algorithm.Defgrid, Object> aStar =
+                    new SettlersEngine.SpatialAStar<map_explore.Algorithm.Defgrid, Object>(dg);
+
+                int low_ind = 0;
+                int lowest = 0;
+
+                for (int i = 0; i < p.Count; i++) {
+                    scores.Add(Math.Abs(px - p[i].X) + Math.Abs( p[i].Y - py) - scoreMap[p[i].X, p[i].Y]);
+                    if (i == 0)
+                        lowest = scores[i];
+                    else if (scores[i] < lowest) {
+                        low_ind = i;
+                        lowest = scores[i];
+                    }
+                }
+
+                Point destination = p[low_ind];
+
+                LinkedList<map_explore.Algorithm.Defgrid> path = aStar.Search(new Point(px, py), destination, null);
+
+                int del = new Random().Next(12);
+
+                for (int i = 0; i < path.Count; i++) {
+                    Point ct = new Point(px, py);
+                    Point nex = new Point(path.ElementAt(i).X, path.ElementAt(i).Y);
+
+
+                    px = nex.X;
+                    py = nex.Y;
+
+                    explore = map_explore.Map.Explore.Ex.calcFOV(map, width, height, visrad, px, py, (conservative_radius == 1), explore);
+                    open = map_explore.Map.Explore.Ex.highlight(width, height, explore, map);
+                    scoreMap = map_explore.Map.Explore.Machina.q_scoreboard_2(map, explore, open, width, height, visrad, (conservative_radius == 1), ref visited);
+
+                    Display_Score_alt(btc, pictureBox1);
+                    Mask_Player(btc, player, px, py, pictureBox1);
+
+                    Display_mask(maskmap, pictureBoxRight);
+                    Mask_Player(maskmap, player, px, py, pictureBoxRight);
+
+                    Thread.Sleep(timescale);
+
+                    if (i == 70 + del)
+                        break;
+                }
+            }
+
+        }
+
+        List<Point> points_to_find () {
+            List<Point> p = new List<Point>();
+            for (int x = 0; x < width; x++)
+                for (int y = 0; y < height; y++)
+                    if (scoreMap[x, y] != 0)
+                        p.Add(new Point(x, y));
+            return p;
+        }
+
+        int nodes_to_find () {
+            int ct = 0;
+            for (int x = 0; x < width; x++)
+                for (int y = 0; y < height; y++)
+                    if (open[x, y] == 1)
+                        ct++;
+            return ct;
         }
     }
 }

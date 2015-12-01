@@ -2,15 +2,16 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Collections;
 
-namespace map_explore.Map.Explore {
-    
+namespace map_explore.Map.Explore
+{
+
 
     public class Ex
     {
         static int floor = 1;
 
-        static int unlit = 0;
         static int lit = 1;
         static int seen = 2;
 
@@ -41,16 +42,16 @@ namespace map_explore.Map.Explore {
             if (conserv)
                 return (dx * dx < rad * rad && dy * dy < rad * rad);
             else
-                return (Math.Sqrt(Math.Abs(dx*dx + dy*dy)) < rad);
+                return (Math.Sqrt(Math.Abs(dx * dx + dy * dy)) < rad);
 
         }
 
-        static bool israd(int x, int y, int width, int height) {
+        static bool israd (int x, int y, int width, int height) {
             return (y >= 0 && y < width && x >= 0 && x < width);
         }
 
         //Calculates field of view of map, and compares it with old map
-        public static int[,] calcFOV(int[,] map, int width, int height, int radius, int startX, int startY, bool conserv, int[,] lastMap) {
+        public static int[,] calcFOV (int[,] map, int width, int height, int radius, int startX, int startY, bool conserv, int[,] lastMap) {
 
 
             if (region == null || width != width_last || height != height_last) {
@@ -127,14 +128,14 @@ namespace map_explore.Map.Explore {
                     if (inBounds(deltaX, deltaY, conservative, radius)) {
                         lightMap[currentX, currentY] = lit;
                         region[currentX, currentY] = 1;
-                        if(highlit != null)
+                        if (highlit != null)
                             if (highlit[currentX, currentY] == 1 || Machina.tally[currentX, currentY] != 0) {
                                 for (int x = currentX - radius - 1; x <= currentX + radius + 1; x++)
                                     for (int y = currentY - radius - 1; y <= currentY + radius + 1; y++)
                                         if (israd(x, y, width, height))
-                                            if(Machina.tally[currentX, currentY] != 0)
+                                            if (Machina.tally[currentX, currentY] != 0)
                                                 region[x, y] = 1;
-                        }
+                            }
                     }
 
 
@@ -159,8 +160,8 @@ namespace map_explore.Map.Explore {
 
         //calculates field of view around a single area
         static void mask (int width, int height, int[,] lastMap) {
-            for(int x = 1; x < width; x++)
-                for (int y = 1; y < height; y++) 
+            for (int x = 1; x < width; x++)
+                for (int y = 1; y < height; y++)
                     if (lightMap[x, y] == lit)
                         continue;
                     else if (lastMap[x, y] == lit || lastMap[x, y] == seen)
@@ -185,8 +186,8 @@ namespace map_explore.Map.Explore {
                     if (i == 0 && j == 0)
                         continue;
                     else
-                        if(lightmap[x + i, y + j] == lit || lightmap[x + i, y + j] == seen)
-                            if(map[x + i, y + j] == token)
+                        if (lightmap[x + i, y + j] == lit || lightmap[x + i, y + j] == seen)
+                            if (map[x + i, y + j] == token)
                                 ct++;
             return ct;
         }
@@ -202,7 +203,7 @@ namespace map_explore.Map.Explore {
             lights = lit;
             Machina.highlight = highlight;
             Machina.visited = visited;
-            for(int x = 0; x < width; x++)
+            for (int x = 0; x < width; x++)
                 for (int y = 0; y < height; y++) {
                     if (highlight[x, y] == 1)
                         calcFOV(map, width, height, radius, x, y, conserv);
@@ -336,7 +337,7 @@ namespace map_explore.Map.Explore {
 
                     //check we're within the target area, and if we're a highlight, then mark as lit if true
                     if (inBounds(deltaX, deltaY, conservative, rad) && highlight[currentX, currentY] == lit)
-                        scoremap[startX, startY] += 2*lit;
+                        scoremap[startX, startY] += 2 * lit;
 
 
                     if (blocked) //our previous cell was a blocking one
@@ -349,7 +350,7 @@ namespace map_explore.Map.Explore {
                             start = newStart;
                         }
                     else
-                        if ((resMap[currentX, currentY] == 0 || lights[currentX, currentY] == unlit || visited[currentX, currentY] == 1) && distance < rad ) {//hit a wall within sight line
+                        if ((resMap[currentX, currentY] == 0 || lights[currentX, currentY] == unlit || visited[currentX, currentY] == 1) && distance < rad) {//hit a wall within sight line
                             blocked = true;
                             castLight(distance + 1, start, leftSlope, xx, xy, yx, yy);
                             newStart = rightSlope;
@@ -359,7 +360,7 @@ namespace map_explore.Map.Explore {
         }
 
         public static int[,] q_scoreboard_2 (int[,] map, int[,] lit, int[,] highlight, int width, int height, int radius, bool conserv, ref int[,] visited) {
-            
+
             int checks = 0;
             scoremap = new int[width, height];
             if (tally == null)
@@ -368,7 +369,7 @@ namespace map_explore.Map.Explore {
 
             lights = lit;
             Machina.highlight = highlight;
-            Machina.visited_2 = visited;
+            Machina.visited_2 = Machina.visited = visited;
             for (int x = 0; x < width; x++)
                 for (int y = 0; y < height; y++) {
                     if ((visited[x, y] == 0 && lit[x, y] != unlit && map[x, y] == 1) && (Ex.region[x, y] == 1 || Ex.region_last[x, y] == 1)) {
@@ -377,12 +378,47 @@ namespace map_explore.Map.Explore {
                         checks++;
                         if (scoremap[x, y] == 0)
                             visited[x, y] = 1;
+                        else {
+                            int k = adjacent_highlit_tiles(width, height, map, x, y);
+                            int k_2 = second_adjacent_highlit_tiles(width, height, map, x, y);
+                            if (k < 4 && k > 0) {
+                                scoremap[x, y] *= 3 * (4 - k / 2);
+                                if (k == 1) {
+                                    if (k_2 == 0) {
+                                        scoremap[x, y] *= 10;
+                                    }
+                                }
+                            }
+                            else if (k_2 == 2 || k_2 == 1 || k_2 == 5)
+                                scoremap[x, y] *= 10;
+                        }
                     }
                 }
-            Console.WriteLine("Optimum mode - Checks: " + checks);
             return scoremap;
         }
 
+        static int adjacent_highlit_tiles (int width, int height, int[,] map, int x, int y) {
+            int ct = 0;
+            for (int i = -1; i < 2; i++)
+                for (int j = -1; j < 2; j++)
+                    if (i == 0 && j == 0)
+                        continue;
+                    else
+                        if (highlight[x + i, y + j] != 0)
+                            ct++;
+            return ct;
+        }
+        static int second_adjacent_highlit_tiles (int width, int height, int[,] map, int x, int y) {
+            int ct = 0;
+            for (int i = -1; i < 2; i++)
+                for (int j = -1; j < 2; j++)
+                    if (i == 0 && j == 0)
+                        continue;
+                    else
+                        if (highlight[x + i, y + j] != 0)
+                            return adjacent_highlit_tiles(width, height, map, x + i, y + j);
+            return ct;
+        }
         public static int[,] tally;
         public static int[,] q_calcFOV_2 (int[,] map, int width, int height, int radius, int startX, int startY, bool conserv) {
             //scoremap[startX, startY] = force;   //light the starting cell
@@ -456,12 +492,67 @@ namespace map_explore.Map.Explore {
                     else
                         if ((resMap[currentX, currentY] == 0 || lights[currentX, currentY] == unlit/* || visited[currentX, currentY] == 1*/) && distance < rad) {//hit a wall within sight line
                             blocked = true;
-                            castLight(distance + 1, start, leftSlope, xx, xy, yx, yy);
+                            castLight_2(distance + 1, start, leftSlope, xx, xy, yx, yy);
                             newStart = rightSlope;
                         }
                 }
             }
         }
+    }
 
+    public class dist_map
+    {
+        static int[,] dmap;
+        static int[,] lmap;
+        static int[,] map;
+        static int w;
+        static int h;
+        static Queue<container> expandables;
+
+        public static int[,] getdistmap (int[,] Map, int[,] lit, int x, int y, int width, int height) {
+            dmap = new int[width, height];
+            lmap = lit;
+            map = Map;
+            w = width;
+            h = height;
+
+            expandables = new Queue<container>();
+
+            dmap[x, y] = -1;
+            expandables.Enqueue(new container(x, y, 0));
+            while(expandables.Count != 0) {
+                container c = expandables.Dequeue();
+                expand(c.X, c.Y, c.Count);
+                Console.WriteLine(expandables.Count);
+            }
+            dmap[x, y] = 0;
+
+            return dmap;
+        }
+        class container {
+            public int X {get; set;}
+            public int Y {get; set; }
+            public int Count {get; set;}
+
+            public container(int x, int y, int ct) {
+                X = x;
+                Y = y;
+                Count = ct;
+            }
+        }
+        public static void expand (int x, int y, int count) {
+            for (int i = -1; i < 2; i++)
+                for (int j = -1; j < 2; j++)
+                    if ((Math.Abs(i - j) != 1))
+                        continue;
+                    else
+                        if (lmap[x + i, y + j] != 0) //we need to have seen the place
+                                if (map[x + i, y + j] == 1) //it also needs to be a floor
+                                    if ((dmap[x + i, y + j] != -1 && dmap[x + i, y + j] > count) || dmap[x + i, y + j] == 0) {
+                                        dmap[x + i, y + j] = count;
+                                        expandables.Enqueue(new container(x + i, y + j, count + 2));
+                                    }
+        }
     }
 }
+        
