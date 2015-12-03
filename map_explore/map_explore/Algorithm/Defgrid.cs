@@ -26,7 +26,7 @@ namespace map_explore.Algorithm
             Defgrid[,] grid = new Defgrid[width, height];
 
             for (int x = 0; x < width; x++)
-                for (int y = 0; y < width; y++) {
+                for (int y = 0; y < height; y++) {
                     Boolean wall = (map[x, y] == 0 || lightmap[x, y] == 0);
                     grid[x, y] = new Defgrid(x, y, wall);
                 }

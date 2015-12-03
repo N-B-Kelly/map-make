@@ -213,6 +213,33 @@ namespace Display_Map
             input.Image = btc;
             input.Refresh();
         }
+        private void Display_Score_age (Bitmap btc, PictureBox input) {
+            Graphics g = Graphics.FromImage(btc);
+            g.FillRectangle(new SolidBrush(Color.Black), 0, 0, (float)width * pixelWidth, (float)height * pixelHeight);
+            for (int k = 0; k < width; k++) {
+                for (int j = 0; j < height; j++) {
+                    if (scoreMap[k, j] != 0) {
+                        int s_score = Math.Abs(px - k) + Math.Abs(j - py);
+                        int col = (40 + 12*(map_explore.Map.Explore.Machina.Age(k,j)));
+                        int col_2 = 40 + 4*(scoreMap[k, j]);
+                        int col_3 = 40 + 3*s_score;
+                        if (col >= 246 || col < 0)
+                            col = 245;
+                        if (col_2 > 246 || col < 0)
+                            col_2 = 245;
+                        if (col_3 > 246 || col < 0)
+                            col_3 = 245;
+                        g.FillRectangle(new SolidBrush(Color.FromArgb(col, col_2, col_3)), k * pixelWidth, j * pixelHeight, pixelWidth, pixelHeight);
+                    }
+                    else if (open[k, j] == 1)
+                        g.FillRectangle(highlight, k * pixelWidth, j * pixelHeight, pixelWidth, pixelHeight);
+                }
+            }
+            g.Flush();
+
+            input.Image = btc;
+            input.Refresh();
+        }
         private void Mask_Player(Bitmap MaskMap, Brush pcol, int x, int y, PictureBox input) {
             Graphics g = Graphics.FromImage(MaskMap);
             g.FillRectangle(player2, x * pixelWidth, y * pixelHeight, pixelWidth, pixelHeight);
@@ -250,10 +277,11 @@ namespace Display_Map
             pictureBox1.Height = h;
             pictureBoxRight.Height = h;
             pictureBoxRight.Width = w;
-            pictureBoxRight.Location = new Point(w, 0);
+            
 
             pixelWidth = w / width;
             pixelHeight = h / height;
+            pictureBoxRight.Location = new Point((int)(pixelWidth * width), 0);
 
             if (pixelWidth == 0 || pixelHeight == 0)
                 return;
@@ -368,7 +396,7 @@ namespace Display_Map
             visited[px, py] = 1;
 
             if ((e as KeyEventArgs).KeyCode == Keys.Space) {
-                Solve(0);
+                Solve(5);
             }
 
             String str = "Map Man {  options: [ ] | C V   - -  W: " + width + ", H: " + height + "   - -  ";
@@ -392,14 +420,17 @@ namespace Display_Map
         }
 
         void Solve (int timescale) {
+            int cturns = 0;
             while (true) {
-
+                
                 Thread.Sleep(timescale);
                 int k = nodes_to_find();
                 if (k == 0) {
                     Display_Image(btc, pictureBox1);
                     Display_Player(btc, back, px, py, pictureBox1);
                     Display_Player(btc, player, pictureBox1);
+                    Console.WriteLine(cturns);
+                    MessageBox.Show(cturns + " turns for a map that is " + width + " by " + height + ", and " + width * height + " units.");
                     return;
                 }
 
@@ -415,8 +446,19 @@ namespace Display_Map
                 int low_ind = 0;
                 int lowest = 0;
 
+                //int[,] sc = map_explore.Map.Explore.dist_map.getdistmap(map, explore, px, py, width, height);
+
                 for (int i = 0; i < p.Count; i++) {
-                    scores.Add(Math.Abs(px - p[i].X) + Math.Abs( p[i].Y - py) - scoreMap[p[i].X, p[i].Y]);
+                    int s_score = Math.Abs(px - p[i].X) + Math.Abs(p[i].Y - py); //formerly: Math.Abs(px - p[i].X) + Math.Abs( p[i].Y - py)
+                    int age;
+                    if (p.Count*1.7 > Math.Sqrt(width))
+                        age = map_explore.Map.Explore.Machina.Age(p[i].X, p[i].Y) - (int)(visrad * 3);
+                    else
+                        age = 0;
+                    //if (age < 1)
+                        //age = 1;
+                    //scores.Add(age*9 + s_score - scoreMap[p[i].X, p[i].Y]*2);
+                    scores.Add((age * 4 + s_score) - (scoreMap[p[i].X, p[i].Y]) + 1);
                     if (i == 0)
                         lowest = scores[i];
                     else if (scores[i] < lowest) {
@@ -429,9 +471,10 @@ namespace Display_Map
 
                 LinkedList<map_explore.Algorithm.Defgrid> path = aStar.Search(new Point(px, py), destination, null);
 
-                int del = new Random().Next(12);
+                int del = new Random().Next(width/2);
 
                 for (int i = 0; i < path.Count; i++) {
+                    cturns++;
                     Point ct = new Point(px, py);
                     Point nex = new Point(path.ElementAt(i).X, path.ElementAt(i).Y);
 
@@ -443,7 +486,7 @@ namespace Display_Map
                     open = map_explore.Map.Explore.Ex.highlight(width, height, explore, map);
                     scoreMap = map_explore.Map.Explore.Machina.q_scoreboard_2(map, explore, open, width, height, visrad, (conservative_radius == 1), ref visited);
 
-                    Display_Score_alt(btc, pictureBox1);
+                    Display_Score_age(btc, pictureBox1);
                     Mask_Player(btc, player, px, py, pictureBox1);
 
                     Display_mask(maskmap, pictureBoxRight);
@@ -451,9 +494,10 @@ namespace Display_Map
 
                     Thread.Sleep(timescale);
 
-                    if (i == 70 + del)
+                    if (i == 50 + width/2 + del)
                         break;
                 }
+                
             }
 
         }

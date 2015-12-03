@@ -58,6 +58,7 @@ namespace map_explore.Map.Explore
                 highlit = new int[width, height];
                 region = new int[width, height];
                 Machina.tally = new int[width, height];
+                Machina.age = new int[width, height];
             }
 
             if (Machina.tally == null)
@@ -195,8 +196,81 @@ namespace map_explore.Map.Explore
 
     public class Machina
     {
+        static int poll_dist = 20;
+        public static int[,] Age (int width, int height, int x, int y) {
+
+            if (scoremap[x, y] != 0 && (adjacent_highlit_tiles(width, height, resMap, x, y) != 0
+                || (adjacent_highlit_tiles_horizontal(width, height, resMap, x, y) == 0 && 
+                adjacent_highlit_tiles_disagonal(width, height, resMap, x, y) == 1))) {
+                age[x, y] += 4;
+                age[x, y] -= (int)Math.Sqrt(age[x, y] / 3 + 1) / 10;
+
+                if (adjacent_highlit_tiles_horizontal(width, height, resMap, x, y) == 2) {
+                    //Console.Write("found pair: " + x + ", " + y + "    -checking... ");
+                    int k = adjacent_width(width, height, resMap, x, y);
+                    bool res = false;
+                    if (k == 2)  //we have a horizontal line: poll up/down
+                        res = poll_age_updown(poll_dist, x, y, width, height);
+                    else if (k == 0) //vert: poll left/right
+                        res = poll_age_leftright(poll_dist, x, y, width, height);
+
+                    if (res)
+                        age[x, y] = -5;
+
+                    
+
+                }
+            }
+            else
+                age[x, y] = 0;
+            return age;
+        }
+
+        static bool poll_age_updown (int max, int x, int y, int width, int height) {
+            //check if we want to go up or down
+            if (lights[x, y + 1] != 0 && lights[x, y - 1] != 0)
+                return true; //avoid endcapping ourself!
+            if (lights[x, y + 1] == 0 && lights[x, y - 1] != 0) { //going down
+                for (int i = 0; i < max; i++)
+                    if(y + i < height)
+                        if (highlight[x, y + i] == 1)
+                            return true;
+            }
+            else if (lights[x, y - 1] == 0 && lights[x, y + 1] != 0) { //going down
+                for (int i = 0; i < max; i++)
+                    if(y - i > 0)
+                        if (highlight[x, y - i] == 1)
+                            return true;
+            }
+            return false;
+        }
+
+        static bool poll_age_leftright (int max, int x, int y, int width, int height) {
+            if (lights[x + 1, y] != 0 && lights[x -1, y] != 0)
+                return true; //avoid endcapping ourself!
+            //check if we want to go up or down
+            if (lights[x + 1, y] == 0 && lights[x - 1, y] != 0) { //right
+                for (int i = 0; i < 5; i++)
+                    if (x + i < width)
+                        if (highlight[x + 1, y] == 1)
+                            return true;
+            }
+            else if (lights[x - 1, y] == 0 && lights[x + 1, y] != 0) { //left
+                for (int i = 0; i < 5; i++)
+                    if (x - i > 0)
+                        if (highlight[x - i, y] == 1)
+                            return true;
+            }
+            return false;
+        }
+
+        public static int Age (int X, int Y) {
+            return age[X, Y];
+        }
         static int unlit = 0;
         static int lit = 1;
+
+        public static int[,] age;
 
         public static int[,] scoreboard (int[,] map, int[,] lit, int[,] highlight, int width, int height, int radius, bool conserv, int[,] visited) {
             scoremap = new int[width, height];
@@ -370,8 +444,10 @@ namespace map_explore.Map.Explore
             lights = lit;
             Machina.highlight = highlight;
             Machina.visited_2 = Machina.visited = visited;
+            
             for (int x = 0; x < width; x++)
                 for (int y = 0; y < height; y++) {
+                    Age(width, height, x, y);
                     if ((visited[x, y] == 0 && lit[x, y] != unlit && map[x, y] == 1) && (Ex.region[x, y] == 1 || Ex.region_last[x, y] == 1)) {
                         scoremap[x, y] = 0;
                         calcFOV(map, width, height, radius, x, y, conserv);
@@ -381,16 +457,21 @@ namespace map_explore.Map.Explore
                         else {
                             int k = adjacent_highlit_tiles(width, height, map, x, y);
                             int k_2 = second_adjacent_highlit_tiles(width, height, map, x, y);
+                            
                             if (k < 4 && k > 0) {
                                 scoremap[x, y] *= 3 * (4 - k / 2);
                                 if (k == 1) {
                                     if (k_2 == 0) {
-                                        scoremap[x, y] *= 10;
+                                        scoremap[x, y] *= 3;
                                     }
                                 }
                             }
                             else if (k_2 == 2 || k_2 == 1 || k_2 == 5)
-                                scoremap[x, y] *= 10;
+                                scoremap[x, y] *= 4;
+                            if (k == 1 && k_2 == 0)
+                                scoremap[x, y] *= 5;
+                            
+
                         }
                     }
                 }
@@ -412,11 +493,41 @@ namespace map_explore.Map.Explore
             int ct = 0;
             for (int i = -1; i < 2; i++)
                 for (int j = -1; j < 2; j++)
-                    if (i == 0 && j == 0)
+                    if (i == 0 && j == 0|| (Math.Abs(i - j) != 1))
                         continue;
                     else
                         if (highlight[x + i, y + j] != 0)
                             return adjacent_highlit_tiles(width, height, map, x + i, y + j);
+            return ct;
+        }
+        static int adjacent_width (int width, int height, int[,] map, int x, int y) {
+            int ct = 0;
+            if(highlight[x + 1, y] == 1)
+                ct++;
+            if(highlight[x - 1, y] == 1)
+                ct++;
+            return ct;
+        }
+        static int adjacent_highlit_tiles_horizontal (int width, int height, int[,] map, int x, int y) {
+            int ct = 0;
+            for (int i = -1; i < 2; i++)
+                for (int j = -1; j < 2; j++)
+                    if (i == 0 && j == 0 || (Math.Abs(i - j) != 1))
+                        continue;
+                    else
+                        if (highlight[x + i, y + j] != 0)
+                            ct++;
+            return ct;
+        }
+        static int adjacent_highlit_tiles_disagonal (int width, int height, int[,] map, int x, int y) {
+            int ct = 0;
+            for (int i = -1; i < 2; i++)
+                for (int j = -1; j < 2; j++)
+                    if (i == 0 && j == 0 || (Math.Abs(i - j) == 1))
+                        continue;
+                    else
+                        if (highlight[x + i, y + j] != 0)
+                            ct++;
             return ct;
         }
         public static int[,] tally;
@@ -522,7 +633,7 @@ namespace map_explore.Map.Explore
             expandables.Enqueue(new container(x, y, 0));
             while(expandables.Count != 0) {
                 container c = expandables.Dequeue();
-                expand(c.X, c.Y, c.Count);
+                expand(c.X, c.Y, c.Count + 1);
                 Console.WriteLine(expandables.Count);
             }
             dmap[x, y] = 0;
@@ -541,6 +652,7 @@ namespace map_explore.Map.Explore
             }
         }
         public static void expand (int x, int y, int count) {
+            if(dmap[x, y] == count - 1 || dmap[x, y] == -1)
             for (int i = -1; i < 2; i++)
                 for (int j = -1; j < 2; j++)
                     if ((Math.Abs(i - j) != 1))
@@ -548,11 +660,20 @@ namespace map_explore.Map.Explore
                     else
                         if (lmap[x + i, y + j] != 0) //we need to have seen the place
                                 if (map[x + i, y + j] == 1) //it also needs to be a floor
-                                    if ((dmap[x + i, y + j] != -1 && dmap[x + i, y + j] > count) || dmap[x + i, y + j] == 0) {
+                                    if (dmap[x + i, y + j] > count || dmap[x + i, y + j] == 0) {
                                         dmap[x + i, y + j] = count;
-                                        expandables.Enqueue(new container(x + i, y + j, count + 2));
+                                        expandables.Enqueue(new container(x + i, y + j, count));
                                     }
         }
+    }
+
+    public class flood_fill
+    {
+
+
+
+    
+
     }
 }
         
